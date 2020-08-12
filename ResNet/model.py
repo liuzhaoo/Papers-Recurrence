@@ -122,9 +122,55 @@ class Resnet(nn.Module):
         self.base_with = width_per_group
 
         self.conv1 = nn.Conv2d(3,self.in_channel,kernel_size=7,stride=2,padding=3,bias=False)  # out_size = (x+1)/2
+        self.bn1 = norm_layer(self.in_channel)
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3,stride=2,padding=)                          # downsample
+        self.maxpool = nn.MaxPool2d(kernel_size=3,stride=2,padding=1)                          # downsample
 
+        self.layer1 = self._make_layers(block,64,layers[0])                                   # layers is a list ,including the numbers of blocks
+        self.layer2 = self._make_layers(block,128,layers[1],stride=2,
+                                        dilate=replace_stride_with_dilation[0])               #since the layer2, apply downsample in the first block
+
+        self.layer2 = self._make_layers(block, 256, layers[2], stride=2,
+                                        dilate=replace_stride_with_dilation[1])
+
+        self.layer2 = self._make_layers(block,512, layers[3], stride=2,
+                                        dilate=replace_stride_with_dilation[2])
+
+        self.avgpool = nn.AdaptiveAvgPool2d((1,1))
+        self.fc = nn.Linear(512*block.expansion,num_class)
+
+        for m in self.modules():
+            if isinstance(m,nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight,mode='fan_out',nonlinearity='relu')
+
+            elif isinstance(m,(nn.BatchNorm2d,nn.GroupNorm)):
+                nn.init.constant_(m.weight,1)
+                nn.init.constant_(m.bias,0)
+
+        if zero_init_residual:
+            for m in self.modules():
+                if isinstance(m, Bottleneck):
+                    nn.init.constant_(m.bn3.weight, 0)
+                elif isinstance(m, BasicBlock):
+                    nn.init.constant_(m.bn2.weight, 0)
+
+    def forward(self,x):
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        out = self.maxpool(out)
+
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+
+        out = self.avgpool(out)
+        out = torch.flatten(out,1)
+        out = self.fc(out)
+
+        return out
 
     def _make_layers(self,block,out,blocks,stride=1,dilate =False):
         """
@@ -147,10 +193,39 @@ class Resnet(nn.Module):
         if stride != 1 or self.in_channel != out * block.expansion:                # neeed downsample
             downsample = nn.Sequential(
                 conv1x1(self.in_channel,out*block.expansion,stride),
-                norm_layer(out*block.expansion)
+                norm_layer(out*block.expansion),
             )
         layers = []
-        layers.append(block(self.in_channel))
+        layers.append(block(self.in_channel,out,stride,downsample,self.groups,
+                            self.base_with,previous_dilation,norm_layer))
 
 
+        self.in_channel = out * block.expansion                                   # update the input channel for next layer
+        for _ in range(1,blocks):
+            layers.append(block(self.in_channel,out,stride,groups=self.groups,
+                            base_wideth=self.base_with,dilation=previous_dilation,norm_layer=norm_layer))
 
+        return nn.Sequential(*layers)
+
+
+def _resnet(arch,block,layers,pretrained,progress,**kwargs):
+    model = Resnet(block,layers,**kwargs)
+    # if pretrained:
+    #     state_dict = load_state_dict_from_url(model_urls[arch],
+    #                                           progress=progress)
+    #     model.load_state_dict(state_dict)
+    return model
+
+def resnet34(pretrained=False, progress=True, **kwargs):
+
+    return _resnet('resnet34',BasicBlock,[3,4,6,3],pretrained,progress,**kwargs)
+
+def resnet50(pretrained=False, progress=True, **kwargs):
+
+    return _resnet('resnet50', Bottleneck, [3, 4, 6, 3], pretrained, progress,
+                   **kwargs)
+
+def resnet101(pretrained=False, progress=True, **kwargs):
+
+    return _resnet('resnet101', Bottleneck, [3, 4, 23, 3], pretrained, progress,
+                   **kwargs)
