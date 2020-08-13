@@ -1,4 +1,4 @@
-import math
+
 import torch.nn as nn
 import torch
 
@@ -9,20 +9,29 @@ __all__ = ['resnet34','resnet50','resnet101']
 
 def conv1x1(in_channel,out_channel,stride=1):
     return nn.Conv2d(in_channel,out_channel,kernel_size=1,stride=stride,bias=False)
+
 def con3x3(in_channel,out_channel,stride=1,groups=1,dilation=1):
     """
     padding to ensure the size remains the same
     """
-    return nn.Conv2d(in_channel,out_channel,kernel_size=3,stride=stride,padding=dilation,groups=groups,bias=False,dilation=dilation)
+    return nn.Conv2d(in_channel,out_channel,kernel_size=3,stride=stride,
+                     padding=dilation,groups=groups,bias=False,dilation=dilation)
 
 class BasicBlock(nn.Module):
     """
     两层连接，论文里对应34层以下的网络
     """
     expansion = 1
+
     def __init__(self,in_channel,out_channel,stride=1,downsample=None,groups=1,
                  base_width=64,dilation=1,norm_layer=None):
         super(BasicBlock,self).__init__()
+        if norm_layer is None:
+            norm_layer = nn.BatchNorm2d
+        if groups != 1 or base_width != 64:
+            raise ValueError('BasicBlock only supports groups=1 and base_width=64')
+        if dilation > 1:
+            raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
         self.conv1 = con3x3(in_channel,out_channel,stride)
         self.bn1 = norm_layer(out_channel)       # 无bn
         self.relu = nn.ReLU(inplace=True)
@@ -33,21 +42,21 @@ class BasicBlock(nn.Module):
         
     def forward(self,x):
         identity = x             # input as the identity
-        
+
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
-        
+
         out = self.conv2(out)
         out = self.bn2(out)
-        
+
         if self.downsample is not None:       #若downsample为True（默认为False），则对输入执行下采样
             identity = self.downsample(x)
 
         out += identity
         out = self.relu(out)
 
-        return  out
+        return out
 
 
 class Bottleneck(nn.Module):
@@ -55,15 +64,15 @@ class Bottleneck(nn.Module):
     """
         对特征图的通道先压缩再放大
     """
-    def __init__(self,in_channel,out_channel,stride=1,downsample=None,groups=1,
-                 base_width=64,dilation=1,norm_layer=None):
+    def __init__(self,in_channel,out_channel, stride=1, downsample=None, groups=1,
+                 base_width=64, dilation=1, norm_layer=None):
         super(Bottleneck, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d                                         # 若未指定，则进行初始化
-            
-        width = int(out_channel*(base_width/64.))*groups
+
+        width = int(out_channel* (base_width / 64.)) * groups
         
-        self.conv1 = conv1x1(in_channel,width)
+        self.conv1 = conv1x1(in_channel, width)
         self.bn1 = norm_layer(width)                                   #  ?
         self.conv2 = con3x3(width,width,stride,groups,dilation)
         self.bn2 = norm_layer(width)
@@ -71,10 +80,10 @@ class Bottleneck(nn.Module):
         self.bn3 = norm_layer(out_channel * self.expansion)         # outchannel is expansion times
 
         self.relu = nn.ReLU(inplace=True)
-        self.dowmsample = downsample
+        self.downsample = downsample
         self.stride = stride
 
-    def forward(self,x):
+    def forward(self, x):
         identity = x
 
         out = self.conv1(x)
@@ -88,8 +97,8 @@ class Bottleneck(nn.Module):
         out = self.conv3(out)
         out = self.bn3(out)
 
-        if self.dowmsample is not None:
-            identity = self.dowmsample(x)
+        if self.downsample is not None:
+            identity = self.downsample(x)
 
         out += identity
         out = self.relu(out)
@@ -100,7 +109,7 @@ class Bottleneck(nn.Module):
 
 
 class Resnet(nn.Module):
-    def __init__(self,block,layers,num_class = 1000,zero_init_residual= False,
+    def __init__(self,block,layers,num_class = 10,zero_init_residual= False,
                  groups=1,width_per_group=64,replace_stride_with_dilation=None,norm_layer=None):
         super(Resnet, self).__init__()
         if norm_layer is None:
@@ -108,7 +117,7 @@ class Resnet(nn.Module):
         self._norm_layer = norm_layer                         # 访问限制
 
         self.in_channel = 64                                  # the input of the layer after layer0(conv1)
-        self.dilation =1
+        self.dilation = 1
         if replace_stride_with_dilation is None:
             """
             指明是否用dilaation来代替stride
@@ -119,7 +128,7 @@ class Resnet(nn.Module):
                              "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
 
         self.groups = groups
-        self.base_with = width_per_group
+        self.base_width = width_per_group
 
         self.conv1 = nn.Conv2d(3,self.in_channel,kernel_size=7,stride=2,padding=3,bias=False)  # out_size = (x+1)/2
         self.bn1 = norm_layer(self.in_channel)
@@ -130,10 +139,10 @@ class Resnet(nn.Module):
         self.layer2 = self._make_layers(block,128,layers[1],stride=2,
                                         dilate=replace_stride_with_dilation[0])               #since the layer2, apply downsample in the first block
 
-        self.layer2 = self._make_layers(block, 256, layers[2], stride=2,
+        self.layer3 = self._make_layers(block, 256, layers[2], stride=2,
                                         dilate=replace_stride_with_dilation[1])
 
-        self.layer2 = self._make_layers(block,512, layers[3], stride=2,
+        self.layer4 = self._make_layers(block,512, layers[3], stride=2,
                                         dilate=replace_stride_with_dilation[2])
 
         self.avgpool = nn.AdaptiveAvgPool2d((1,1))
@@ -197,13 +206,13 @@ class Resnet(nn.Module):
             )
         layers = []
         layers.append(block(self.in_channel,out,stride,downsample,self.groups,
-                            self.base_with,previous_dilation,norm_layer))
+                            self.base_width,previous_dilation,norm_layer))
 
 
         self.in_channel = out * block.expansion                                   # update the input channel for next layer
         for _ in range(1,blocks):
             layers.append(block(self.in_channel,out,stride,groups=self.groups,
-                            base_wideth=self.base_with,dilation=previous_dilation,norm_layer=norm_layer))
+                            base_width=self.base_width,dilation=previous_dilation,norm_layer=norm_layer))
 
         return nn.Sequential(*layers)
 
