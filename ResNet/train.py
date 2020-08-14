@@ -53,8 +53,7 @@ def train(save_dir=save_dir,lr =lr,num_epochs=nEpochs,
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10,gamma=0.1)
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize((0.4915, 0.4823, 0.4468),
-                             (0.2470, 0.2435, 0.2616))
+
     ])
 
 

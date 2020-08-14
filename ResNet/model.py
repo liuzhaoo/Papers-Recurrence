@@ -23,7 +23,7 @@ class BasicBlock(nn.Module):
     """
     expansion = 1
 
-    def __init__(self,in_channel,out_channel,stride=1,downsample=None,groups=1,
+    def __init__(self,inchannel,outchannel,stride=1,downsample=None,groups=1,
                  base_width=64,dilation=1,norm_layer=None):
         super(BasicBlock,self).__init__()
         if norm_layer is None:
@@ -32,11 +32,11 @@ class BasicBlock(nn.Module):
             raise ValueError('BasicBlock only supports groups=1 and base_width=64')
         if dilation > 1:
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
-        self.conv1 = con3x3(in_channel,out_channel,stride)
-        self.bn1 = norm_layer(out_channel)       # 无bn
+        self.conv1 = con3x3(inchannel,outchannel,stride)
+        self.bn1 = norm_layer(outchannel)       # 无bn
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = con3x3(out_channel,out_channel)
-        self.bn2 = norm_layer(out_channel)
+        self.conv2 = con3x3(outchannel,outchannel)
+        self.bn2 = norm_layer(outchannel)
         self.downsample = downsample
         self.stride = stride
         
@@ -64,20 +64,20 @@ class Bottleneck(nn.Module):
     """
         对特征图的通道先压缩再放大
     """
-    def __init__(self,in_channel,out_channel, stride=1, downsample=None, groups=1,
+    def __init__(self,inchannel,outchannel, stride=1, downsample=None, groups=1,
                  base_width=64, dilation=1, norm_layer=None):
         super(Bottleneck, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d                                         # 若未指定，则进行初始化
 
-        width = int(out_channel* (base_width / 64.)) * groups
+        width = int(outchannel* (base_width / 64.)) * groups
         
-        self.conv1 = conv1x1(in_channel, width)
+        self.conv1 = conv1x1(inchannel, width)
         self.bn1 = norm_layer(width)                                   #  ?
         self.conv2 = con3x3(width,width,stride,groups,dilation)
         self.bn2 = norm_layer(width)
-        self.conv3 = conv1x1(width,out_channel * self.expansion)
-        self.bn3 = norm_layer(out_channel * self.expansion)         # outchannel is expansion times
+        self.conv3 = conv1x1(width,outchannel * self.expansion)
+        self.bn3 = norm_layer(outchannel * self.expansion)         # outchannel is expansion times
 
         self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
@@ -96,12 +96,14 @@ class Bottleneck(nn.Module):
 
         out = self.conv3(out)
         out = self.bn3(out)
-
+        a = out.size()
+        b_ =  identity.size()
         if self.downsample is not None:
             identity = self.downsample(x)
-
+        b = identity.size()
         out += identity
         out = self.relu(out)
+        c = out.size()
 
         return out
 
@@ -211,13 +213,13 @@ class Resnet(nn.Module):
 
         self.in_channel = out * block.expansion                                   # update the input channel for next layer
         for _ in range(1,blocks):
-            layers.append(block(self.in_channel,out,stride,groups=self.groups,
+            layers.append(block(self.in_channel,out,groups=self.groups,
                             base_width=self.base_width,dilation=previous_dilation,norm_layer=norm_layer))
-
+# 记录问题： 这里传入的参数中，stride应为默认的1，才会在每个layer的第二个block以后不进行通道减半
         return nn.Sequential(*layers)
 
 
-def _resnet(arch,block,layers,pretrained,progress,**kwargs):
+def _resnet(block,layers,**kwargs):
     model = Resnet(block,layers,**kwargs)
     # if pretrained:
     #     state_dict = load_state_dict_from_url(model_urls[arch],
@@ -225,16 +227,16 @@ def _resnet(arch,block,layers,pretrained,progress,**kwargs):
     #     model.load_state_dict(state_dict)
     return model
 
-def resnet34(pretrained=False, progress=True, **kwargs):
+def resnet34(**kwargs):
 
-    return _resnet('resnet34',BasicBlock,[3,4,6,3],pretrained,progress,**kwargs)
+    return _resnet(BasicBlock,[3,4,6,3],**kwargs)
 
-def resnet50(pretrained=False, progress=True, **kwargs):
+def resnet50( **kwargs):
 
-    return _resnet('resnet50', Bottleneck, [3, 4, 6, 3], pretrained, progress,
+    return _resnet(Bottleneck, [3, 4, 6, 3],
                    **kwargs)
 
-def resnet101(pretrained=False, progress=True, **kwargs):
+def resnet101( **kwargs):
 
-    return _resnet('resnet101', Bottleneck, [3, 4, 23, 3], pretrained, progress,
+    return _resnet( Bottleneck, [3, 4, 23, 3],
                    **kwargs)
