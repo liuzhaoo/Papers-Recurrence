@@ -21,10 +21,10 @@ class_names = ['airplane','automobile','bird','cat','deer',
 
 device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
 print("Device being used:", device)
-nEpochs = 1000  # Number of epochs for training
+nEpochs = 500  # Number of epochs for training
 resume_epoch = 0
 num_classes = 10
-snapshot = 100 # Store a model every snapshot epochs
+snapshot = 50 # Store a model every snapshot epochs
 lr = 1e-3
 useTest = True
 #
@@ -39,7 +39,7 @@ else:
 
 save_dir = os.path.join(abspath, 'run', 'run_' + str(run_id))
 saveName = 'resnet-cifa10'
-modelName = 'resnet100'
+modelName = 'resnet34'
 
 def train(save_dir=save_dir,lr =lr,num_epochs=nEpochs,
           save_epoch=snapshot,useTest=useTest):
@@ -77,7 +77,7 @@ def train(save_dir=save_dir,lr =lr,num_epochs=nEpochs,
     writer = SummaryWriter(log_dir=log_dir)
     print('Training model on {} dataset...'.format('cifa10'))
 
-    train_dataloader = DataLoader(cifa10(abspath, train=True,transform = transform),batch_size=20, shuffle=True, num_workers=4)
+    train_dataloader = DataLoader(cifa10(abspath, train=True,transform = transform),batch_size=40, shuffle=True, num_workers=8)
     test_dataloader = DataLoader(cifa10(abspath,train=False,transform=transform))
 
     train_size = len(train_dataloader.dataset)

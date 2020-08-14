@@ -105,7 +105,7 @@ class cifa10():
         return img, target
 
     def __len__(self):
-        return len(self.data)+1
+        return len(self.data)
 
     def _check_integrity(self):
         root = self.root
