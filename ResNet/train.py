@@ -9,7 +9,8 @@ from dataset import  cifa10
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 import torch
-from model import resnet34,resnet50,resnet101
+# from model import resnet34,resnet50,resnet101
+from cifa_model import resnet56
 from tensorboardX import SummaryWriter
 from torch import nn, optim
 from torch.utils.data import DataLoader
@@ -19,14 +20,14 @@ abspath = './'
 class_names = ['airplane','automobile','bird','cat','deer',
                'dog','frog','horse','ship','truck']
 
-device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("Device being used:", device)
 nEpochs = 500  # Number of epochs for training
 resume_epoch = 0
 num_classes = 10
 snapshot = 50 # Store a model every snapshot epochs
-lr = 1e-3
-useTest = True
+lr = 1e-1
+useTest = False
 #
 
 
@@ -39,18 +40,18 @@ else:
 
 save_dir = os.path.join(abspath, 'run', 'run_' + str(run_id))
 saveName = 'resnet-cifa10'
-modelName = 'resnet34'
+modelName = 'resnet56'
 
 def train(save_dir=save_dir,lr =lr,num_epochs=nEpochs,
           save_epoch=snapshot,useTest=useTest):
-    if modelName == 'resnet34':
-        model = resnet34()
-    elif modelName == 'resnet100':
-        model = resnet101()
+    if modelName == 'resnet56':
+        model = resnet56()
+    # elif modelName == 'resnet100':
+    #     model = resnet101()
 
     criterion = nn.CrossEntropyLoss()  # standard crossentropy loss for classification
-    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.1)
-    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10,gamma=0.1)
+    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.0001)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100,gamma=0.1)
     transform = transforms.Compose([
         transforms.ToTensor(),
 
@@ -71,13 +72,13 @@ def train(save_dir=save_dir,lr =lr,num_epochs=nEpochs,
 
     model.to(device)
     criterion.to(device)
-    # model = nn.DataParallel(model, device_ids=[0, 2])
+    # model = nn.DataParallel(model, device_ids=[0, 1])
 
     log_dir = os.path.join(save_dir, 'models', datetime.now().strftime('%b%d_%H-%M-%S') + '_' + socket.gethostname())
     writer = SummaryWriter(log_dir=log_dir)
     print('Training model on {} dataset...'.format('cifa10'))
 
-    train_dataloader = DataLoader(cifa10(abspath, train=True,transform = transform),batch_size=40, shuffle=True, num_workers=8)
+    train_dataloader = DataLoader(cifa10(abspath, train=True,transform = transform),batch_size=128, shuffle=True, num_workers=10)
     test_dataloader = DataLoader(cifa10(abspath,train=False,transform=transform))
 
     train_size = len(train_dataloader.dataset)
@@ -104,7 +105,7 @@ def train(save_dir=save_dir,lr =lr,num_epochs=nEpochs,
 
             loss.backward()
             optimizer.step()
-            # scheduler.step()
+            scheduler.step()
 
 
             runningloss += loss.item()*imgs.size(0)
