@@ -25,12 +25,12 @@ class BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(self, inchannel, outchannel, stride=1, downsample=None, groups=1,
-                 base_width=64, dilation=1, norm_layer=None):
+                  dilation=1, norm_layer=None):
         super(BasicBlock, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
-        if groups != 1 or base_width != 64:
-            raise ValueError('BasicBlock only supports groups=1 and base_width=64')
+        # if groups != 1 or base_width != 16:
+        #     raise ValueError('BasicBlock only supports groups=1 and base_width=64')
         if dilation > 1:
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
         self.conv1 = con3x3(inchannel, outchannel, stride)
@@ -67,8 +67,8 @@ class BasicBlock(nn.Module):
 
 
 class Resnet(nn.Module):
-    def __init__(self, block, layers, num_class=10, zero_init_residual=False,
-                 groups=1, width_per_group=64, replace_stride_with_dilation=None, norm_layer=None):
+    def __init__(self, layers, num_class=10, zero_init_residual=False,
+                 groups=1, replace_stride_with_dilation=None, norm_layer=None):
         super(Resnet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -86,26 +86,26 @@ class Resnet(nn.Module):
                              "or a 3-element tuple, got {}".format(replace_stride_with_dilation))
 
         self.groups = groups
-        self.base_width = width_per_group
+        # self.base_width = width_per_group
 
         self.conv1 = nn.Conv2d(3, self.in_channel, kernel_size=3, stride=1, padding=1, bias=False)  # out_size = (x+1)/2
         self.bn1 = norm_layer(self.in_channel)
         self.relu = nn.ReLU(inplace=True)
-        # self.maxpool = nn.MaxPool2d(kernel_size=3,stride=2,padding=1)                          # downsample
+        self.maxpool = nn.MaxPool2d(kernel_size=3,stride=1,padding=1)                          # downsample
 
-        self.layer1 = self._make_layers(block, 16, layers[0])  # layers is a list ,including the numbers of blocks
-        self.layer2 = self._make_layers(block, 32, layers[1], stride=2,
+        self.layer1 = self._make_layers(16, layers[0])  # layers is a list ,including the numbers of blocks
+        self.layer2 = self._make_layers(32, layers[1], stride=2,
                                         dilate=replace_stride_with_dilation[
                                             0])  # since the layer2, apply downsample in the first block
 
-        self.layer3 = self._make_layers(block, 64, layers[2], stride=2,
+        self.layer3 = self._make_layers(64, layers[2], stride=2,
                                         dilate=replace_stride_with_dilation[1])
 
         # self.layer4 = self._make_layers(block,512, layers[3], stride=2,
         #                                 dilate=replace_stride_with_dilation[2])
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(64 * block.expansion, num_class)
+        self.fc = nn.Linear(64 * BasicBlock.expansion, num_class)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -125,7 +125,7 @@ class Resnet(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
-        # out = self.maxpool(out)
+        out = self.maxpool(out)
         m = out.size()
         out = self.layer1(out)
         s1 = out.size()
@@ -140,7 +140,7 @@ class Resnet(nn.Module):
 
         return out
 
-    def _make_layers(self, block, out, blocks, stride=1, dilate=False):
+    def _make_layers(self, out, blocks, stride=1, dilate=False):
         """
 
         :param block:  input one of the blocks(basic or boottle)
@@ -158,31 +158,28 @@ class Resnet(nn.Module):
             self.dilation *= stride
             stride = 1
 
-        if stride != 1 or self.in_channel != out * block.expansion:  # neeed downsample
+        if stride != 1 or self.in_channel != out * BasicBlock.expansion:  # neeed downsample
             downsample = nn.Sequential(
-                conv1x1(self.in_channel, out * block.expansion, stride),
-                norm_layer(out * block.expansion),
+                conv1x1(self.in_channel, out * BasicBlock.expansion, stride),
+                norm_layer(out * BasicBlock.expansion),
             )
         layers = []
-        layers.append(block(self.in_channel, out, stride, downsample, self.groups,
-                            self.base_width, previous_dilation, norm_layer))
+        layers.append(BasicBlock(self.in_channel, out, stride, downsample, self.groups,
+                            previous_dilation, norm_layer))
 
-        self.in_channel = out * block.expansion  # update the input channel for next layer
+        self.in_channel = out * BasicBlock.expansion  # update the input channel for next layer
         for _ in range(1, blocks):
-            layers.append(block(self.in_channel, out, groups=self.groups,
-                                base_width=self.base_width, dilation=previous_dilation, norm_layer=norm_layer))
+            layers.append(BasicBlock(self.in_channel, out, groups=self.groups,
+                                 dilation=previous_dilation, norm_layer=norm_layer))
         # 记录问题： 这里传入的参数中，stride应为默认的1，才会在每个layer的第二个block以后不进行通道减半
         return nn.Sequential(*layers)
 
 
-def _resnet(block, layers, **kwargs):
-    model = Resnet(block, layers, **kwargs)
-    # if pretrained:
-    #     state_dict = load_state_dict_from_url(model_urls[arch],
-    #                                           progress=progress)
-    #     model.load_state_dict(state_dict)
+def _resnet(layers, **kwargs):
+    model = Resnet(layers, **kwargs)
+
     return model
 
 
 def resnet56(**kwargs):
-    return _resnet(BasicBlock, [9, 9, 9], **kwargs)
+    return _resnet([12, 12, 12], **kwargs)

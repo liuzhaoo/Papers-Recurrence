@@ -4,6 +4,7 @@ import os.path
 import numpy as np
 import pickle
 import hashlib
+import torch
 
 def calculate_md5(fpath, chunk_size=1024 * 1024):
     md5 = hashlib.md5()
@@ -39,7 +40,7 @@ class cifa10():
         'key': 'label_names',
         'md5': '5ff9c542aee3614f3951f8cda6e48888',
     }
-    def __init__(self, root,train=True,transform=None, target_transform=None,):
+    def __init__(self, root,train=True,transform=None, target_transform=None):
         super(cifa10, self).__init__()
         self.train = train
         self.root = root

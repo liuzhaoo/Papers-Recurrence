@@ -4,7 +4,7 @@ from datetime import datetime
 import socket
 import glob
 import os
-from dataset import  cifa10
+from dataset import cifa10
 # import tqdm
 from tqdm import tqdm
 from matplotlib import pyplot as plt
@@ -22,12 +22,12 @@ class_names = ['airplane','automobile','bird','cat','deer',
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("Device being used:", device)
-nEpochs = 500  # Number of epochs for training
+nEpochs = 300  # Number of epochs for training
 resume_epoch = 0
 num_classes = 10
-snapshot = 50 # Store a model every snapshot epochs
-lr = 1e-1
-useTest = False
+snapshot =100  # Store a model every snapshot epochs
+lr = 0.1
+useTest = True
 #
 
 
@@ -51,7 +51,7 @@ def train(save_dir=save_dir,lr =lr,num_epochs=nEpochs,
 
     criterion = nn.CrossEntropyLoss()  # standard crossentropy loss for classification
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.0001)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100,gamma=0.1)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=80,gamma=0.1)
     transform = transforms.Compose([
         transforms.ToTensor(),
 
@@ -65,21 +65,25 @@ def train(save_dir=save_dir,lr =lr,num_epochs=nEpochs,
                        map_location=lambda storage, loc: storage)   # Load all tensors onto the CPU
         print("Initializing weights from: {}...".format(
             os.path.join(save_dir, 'models', saveName + '_epoch-' + str(resume_epoch - 1) + '.pth.tar')))
+
+
         model.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['opt_dict'])
+
+        # model.load_state_dict({k.replace('module.', ''): v for k, v in torch.load('checkpoint.pt').items()})
 
     print('Total params: %.2fM' % (sum(p.numel() for p in model.parameters()) / 1000000.0))
 
     model.to(device)
     criterion.to(device)
-    # model = nn.DataParallel(model, device_ids=[0, 1])
+    model = nn.DataParallel(model, device_ids=[0, 2])
 
     log_dir = os.path.join(save_dir, 'models', datetime.now().strftime('%b%d_%H-%M-%S') + '_' + socket.gethostname())
     writer = SummaryWriter(log_dir=log_dir)
     print('Training model on {} dataset...'.format('cifa10'))
 
-    train_dataloader = DataLoader(cifa10(abspath, train=True,transform = transform),batch_size=128, shuffle=True, num_workers=10)
-    test_dataloader = DataLoader(cifa10(abspath,train=False,transform=transform))
+    train_dataloader = DataLoader(cifa10(abspath, train=True,transform=transform),batch_size=512, shuffle=True, num_workers=64)
+    test_dataloader = DataLoader(cifa10(abspath,train=False,transform=transform),batch_size=512, shuffle=True, num_workers=64)
 
     train_size = len(train_dataloader.dataset)
     test_size = len(test_dataloader.dataset)
