@@ -9,4 +9,7 @@ model = resnet56()
 model.to(device)
 
 
-summary(model, (3, 32, 32))
+# summary(model, (3, 32, 32))
+
+print(model)
+

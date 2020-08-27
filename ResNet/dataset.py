@@ -102,7 +102,9 @@ class cifa10():
 
         if self.target_transform is not None:
             target = self.target_transform(target)
-
+        # imgs = torch.stack([img_t for img_t,t in img],dim=3)
+        # img -= imgs.view(3, -1).mean(dim=1)
+        # torch.from_numpy()
         return img, target
 
     def __len__(self):

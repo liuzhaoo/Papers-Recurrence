@@ -20,13 +20,13 @@ abspath = './'
 class_names = ['airplane','automobile','bird','cat','deer',
                'dog','frog','horse','ship','truck']
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
 print("Device being used:", device)
 nEpochs = 300  # Number of epochs for training
 resume_epoch = 0
 num_classes = 10
 snapshot =100  # Store a model every snapshot epochs
-lr = 0.1
+lr = 0.001
 useTest = True
 #
 
@@ -51,9 +51,11 @@ def train(save_dir=save_dir,lr =lr,num_epochs=nEpochs,
 
     criterion = nn.CrossEntropyLoss()  # standard crossentropy loss for classification
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=0.0001)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=80,gamma=0.1)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.1)
     transform = transforms.Compose([
         transforms.ToTensor(),
+        transforms.Normalize((0.4915, 0.4823, 0.4468),
+                             (0.2470, 0.2435, 0.2616))
 
     ])
 
@@ -76,14 +78,14 @@ def train(save_dir=save_dir,lr =lr,num_epochs=nEpochs,
 
     model.to(device)
     criterion.to(device)
-    model = nn.DataParallel(model, device_ids=[0, 2])
+    # model = nn.DataParallel(model, device_ids=[0, 2])
 
     log_dir = os.path.join(save_dir, 'models', datetime.now().strftime('%b%d_%H-%M-%S') + '_' + socket.gethostname())
     writer = SummaryWriter(log_dir=log_dir)
     print('Training model on {} dataset...'.format('cifa10'))
 
-    train_dataloader = DataLoader(cifa10(abspath, train=True,transform=transform),batch_size=512, shuffle=True, num_workers=64)
-    test_dataloader = DataLoader(cifa10(abspath,train=False,transform=transform),batch_size=512, shuffle=True, num_workers=64)
+    train_dataloader = DataLoader(cifa10(abspath, train=True,transform=transform),batch_size=32, shuffle=True, num_workers=8)
+    test_dataloader = DataLoader(cifa10(abspath,train=False,transform=transform),batch_size=32, shuffle=True, num_workers=8)
 
     train_size = len(train_dataloader.dataset)
     test_size = len(test_dataloader.dataset)
@@ -105,12 +107,12 @@ def train(save_dir=save_dir,lr =lr,num_epochs=nEpochs,
             loss = criterion(outputs, labels)
 
             probs = nn.Softmax(dim=1)(outputs)
-            preds = torch.max(probs, 1)[1]
+            preds = torch.max(probs,dim=1)[1]
 
             loss.backward()
             optimizer.step()
             scheduler.step()
-
+            cd = imgs.size(0)
 
             runningloss += loss.item()*imgs.size(0)
             runnincorrect += torch.sum(preds == labels.data)

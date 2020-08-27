@@ -182,4 +182,4 @@ def _resnet(layers, **kwargs):
 
 
 def resnet56(**kwargs):
-    return _resnet([12, 12, 12], **kwargs)
+    return _resnet([9, 9, 9], **kwargs)
