@@ -3,7 +3,14 @@ import json
 from pathlib import Path
 
 import pandas as pd
-from .utils import get_n_frames, get_n_frames_hdf5
+# from utils import get_n_frames
+
+
+def get_n_frames(video_path):
+	return len([
+		x for x in video_path.iterdir()     # 在video子目录中循环
+		if 'image' in x.name and x.name[0] != '.'
+	])
 
 
 def convert_csv_to_dict(csv_path):
@@ -37,11 +44,11 @@ def convert_csv_to_dict(csv_path):
 
 def load_labels(train_csv_path):
 	data = pd.read_csv(train_csv_path)
-	return data['label'].unique.tolist()  # 将所有类放到列表里
+	return data['label'].unique().tolist()  # 将所有类放到列表里
 
 
 def convert_kinetics_csv_to_json(train_csv_path, val_csv_path,
-                                 video_dir_path, video_type, dst_json_path):
+								 video_dir_path, video_type, dst_json_path):
 	labels = load_labels(train_csv_path)
 	train_database = convert_csv_to_dict(train_csv_path)
 	val_database = convert_csv_to_dict(val_csv_path)
@@ -76,20 +83,20 @@ def convert_kinetics_csv_to_json(train_csv_path, val_csv_path,
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument(
-		'--dir_path', default='./', type=Path, help='输入csv路径'
+		'--dir_path', default='../testvideo/kinetics400', type=Path, help='输入csv路径'
 
 	)
 	parser.add_argument(
 		'--video_path', default='/home/lzhao/文档/datasets/kinetics/train_jpg', type=Path, help='照片数据'
 	)
-	parser.add_argument('video_type',
-	                    default='jpg',
-	                    type=str,
-	                    help=('jpg or hdf5'))
-	parser.add_argument('dst_path',
-	                    default='../testvideo/kinetics400',
-	                    type=Path,
-	                    help='Path of dst json file.')
+	parser.add_argument('--video_type',
+						default='jpg',
+						type=str,
+						help=('jpg or hdf5'))
+	parser.add_argument('--dst_path',
+						default='../testvideo/kinetics400/json',
+						type=Path,
+						help='Path of dst json file.')
 	args = parser.parse_args()
 
 	train_csv_path = (args.dir_path / 'train.csv')
@@ -97,4 +104,4 @@ if __name__ == '__main__':
 	test_csv_path = None
 
 	convert_kinetics_csv_to_json(train_csv_path, val_csv_path,
-	                             args.video_path, args.video_type,args.dst_path)
+								 args.video_path, args.video_type,args.dst_path)
