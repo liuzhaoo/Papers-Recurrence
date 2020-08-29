@@ -62,7 +62,7 @@ def convert_kinetics_csv_to_json(train_csv_path, val_csv_path,
 	dst_data['database'].update(val_database)
 	# if test_csv_path.exists():
 	# 	dst_data['database'].update(test_database)
-
+	non_exist_id = []
 	for k, v in dst_data['database'].items():
 		if 'label' in v['annotations']:
 			label = v['annotations']['label']  # 取出每个视频的label
@@ -75,7 +75,12 @@ def convert_kinetics_csv_to_json(train_csv_path, val_csv_path,
 				n_frames = get_n_frames(video_path)  # 计算帧数量
 				v['annotations']['segment'] = (1, n_frames + 1)
 			else:
-				dst_data['database'].pop(k)
+				non_exist_id.append(k)
+				break
+	for i in non_exist_id:
+		print(i)
+		x = str(i)
+		dst_data['database'].pop(x)
 	with dst_json_path.open('w') as dst_file:
 		json.dump(dst_data, dst_file)
 
