@@ -14,7 +14,7 @@ def convert_csv_to_dict(csv_path):
 	for i in range(data.shape[0]):  # 0即代表行
 		row = data.iloc[i, :]  # 取一行的所有内容
 		# 得到
-		basename = '%s_%s_%s_' % (row["youtube_id"], '%06d' % row['time_start'], '%06d' % row['time_end'])  #
+		basename = '%s' % row["youtube_id"]  #
 		keys.append(basename)
 
 		if subset != 'testing':
@@ -40,19 +40,21 @@ def load_labels(train_csv_path):
 	return data['label'].unique.tolist()  # 将所有类放到列表里
 
 
-def convert_kinetics_csv_to_json(train_csv_path, val_csv_path, test_csv_path,
+def convert_kinetics_csv_to_json(train_csv_path, val_csv_path,
                                  video_dir_path, video_type, dst_json_path):
 	labels = load_labels(train_csv_path)
 	train_database = convert_csv_to_dict(train_csv_path)
 	val_database = convert_csv_to_dict(val_csv_path)
-	if test_csv_path.exists():
-		test_database = convert_csv_to_dict(test_csv_path)
+	# if test_csv_path.exists():
+	# 	test_database = convert_csv_to_dict(test_csv_path)
 
 	dst_data = {}
 	dst_data['labels'] = labels
 	dst_data['database'] = {}
 	dst_data['database'].update(train_database)
-	dst_data['database'].update(val_csv_path)
+	dst_data['database'].update(val_database)
+	# if test_csv_path.exists():
+	# 	dst_data['database'].update(test_database)
 
 	for k, v in dst_data['database'].items():
 		if 'label' in v['annotations']:
@@ -63,7 +65,36 @@ def convert_kinetics_csv_to_json(train_csv_path, val_csv_path, test_csv_path,
 		if video_type == 'jpg':
 			video_path = video_dir_path / label / k
 			if video_path.exists():
-				n_frames = get_n_frames(video_path)     #计算帧数量
-				v['annotations']['segment'] = (1,n_frames+1)
+				n_frames = get_n_frames(video_path)  # 计算帧数量
+				v['annotations']['segment'] = (1, n_frames + 1)
 			else:
+				dst_data['database'].pop(k)
+	with dst_json_path.open('w') as dst_file:
+		json.dump(dst_data, dst_file)
 
+
+if __name__ == '__main__':
+	parser = argparse.ArgumentParser()
+	parser.add_argument(
+		'--dir_path', default='./', type=Path, help='输入csv路径'
+
+	)
+	parser.add_argument(
+		'--video_path', default='/home/lzhao/文档/datasets/kinetics/train_jpg', type=Path, help='照片数据'
+	)
+	parser.add_argument('video_type',
+	                    default='jpg',
+	                    type=str,
+	                    help=('jpg or hdf5'))
+	parser.add_argument('dst_path',
+	                    default='../testvideo/kinetics400',
+	                    type=Path,
+	                    help='Path of dst json file.')
+	args = parser.parse_args()
+
+	train_csv_path = (args.dir_path / 'train.csv')
+	val_csv_path = (args.dir_path / 'validate.csv')
+	test_csv_path = None
+
+	convert_kinetics_csv_to_json(train_csv_path, val_csv_path,
+	                             args.video_path, args.video_type,args.dst_path)
