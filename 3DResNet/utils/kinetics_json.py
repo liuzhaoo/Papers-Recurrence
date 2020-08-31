@@ -23,14 +23,10 @@ def convert_csv_to_dict(csv_path):
 	for i in range(data.shape[0]):  # 0即代表行
 		row = data.iloc[i, :]  # 取一行的所有内容
 		# 得到
-		if subset == 'train':
-			basename = '%s_%s_%s' % (row['youtube_id'], '%06d' % row['time_start'],
-			                         '%06d' % row['time_end'])
-			keys.append(basename)
 
-		elif subset == 'validate':
-			basename = '%s' % row["youtube_id"]  #
-			keys.append(basename)
+
+		basename = '%s' % row["youtubeid"]  #
+		keys.append(basename)
 		if subset != 'testing':
 			key_labels.append(row['label'])
 
@@ -49,8 +45,8 @@ def convert_csv_to_dict(csv_path):
 	return database
 
 
-def load_labels(train_csv_path):
-	data = pd.read_csv(train_csv_path)
+def load_labels(csv_path):
+	data = pd.read_csv(csv_path)
 	return data['label'].unique().tolist()  # 将所有类放到列表里
 
 
@@ -65,7 +61,7 @@ def convert_kinetics_csv_to_json(trainval_csv_path,
 	# if test_csv_path.exists():
 	# 	test_database = convert_csv_to_dict(test_csv_path)
 
-	database = convert_csv_to_dict(train_csv_path)
+	database = convert_csv_to_dict(trainval_csv_path)
 	# dst_data['database'].update(train_database)
 	dst_data['database'].update(database)
 	# if test_csv_path.exists():
@@ -97,7 +93,7 @@ def convert_kinetics_csv_to_json(trainval_csv_path,
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument(
-		'--dir_path', default='../testvideo/kinetics400', type=Path, help='输入csv路径'
+		'--dir_path', default='../files', type=Path, help='输入csv路径'
 
 	)
 	parser.add_argument(
@@ -108,13 +104,13 @@ if __name__ == '__main__':
 	                    type=str,
 	                    help=('jpg or hdf5'))
 	parser.add_argument('--dst_path',
-	                    default='../testvideo/kinetics400/train_jpg.json',
+	                    default='../files/train_jpg.json',
 	                    type=Path,
 	                    help='Path of dst json file.')
 	args = parser.parse_args()
 
 	train_csv_path = (args.dir_path / 'train.csv')
-	val_csv_path = (args.dir_path / 'validate.csv')
+	val_csv_path = (args.dir_path / 'val.csv')
 	test_csv_path = None
 
 	convert_kinetics_csv_to_json(train_csv_path,
