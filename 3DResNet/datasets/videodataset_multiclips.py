@@ -44,11 +44,12 @@ class VideoDatasetMultiClips(VideoDataset):
 
 		clips,segments = self.__loading(path,video_frame_indices)
 
+		#  self.target_type 默认为‘label’，是字符串
 		if isinstance(self.target_type,list):
-			target = [self.data[index][t] for t in self.target_type]      #  为只取某些帧
+			target = [self.data[index][t] for t in self.target_type]      #  若为列表（['video_id', 'segment']），则让target = 视频名和端点的组合
 
 		else:
-			target = self.data[index][self.target_type]
+			target = self.data[index][self.target_type]                   # target就是label_id，也就是每个帧所属的类别对应的数字
 
 
 		if 'segment' in self.target_type:                                # 判断target_type 中是否含有‘segment’
@@ -60,7 +61,8 @@ class VideoDatasetMultiClips(VideoDataset):
 					targets[-1][segment_index] = s
 
 			else:
-				targets = segments                                        #  若target_type不是列表，则令targets=segments
+				targets = segments                                        #  若target_type不是列表，此时只有一种情况即为‘segment ’则令targets=segments，
+				                                                          #  segments 也是一个列表，每一项都是每个视频的帧数目两个端点
 		else:
 			targets = [target for _ in range(len(segments))]             # 若target_type中不含有‘segment’,则取targes为 target的内容
 

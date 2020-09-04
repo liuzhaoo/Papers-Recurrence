@@ -100,10 +100,10 @@ class VideoDataset(Dataset):
 			frame_indices = list(range(segment[0], segment[1]))
 			sample = {
 				'video': video_path,
-				'segment': segment,
-				'frame_indices': frame_indices,
-				'video_id': video_ids[i],
-				'label': label_id
+				'segment': segment,                       # 编号端点
+				'frame_indices': frame_indices,           # 所有帧编号
+				'video_id': video_ids[i],                 # 视频名
+				'label': label_id                         # 类别对应的数字
 			}
 			dataset.append(sample)
 
