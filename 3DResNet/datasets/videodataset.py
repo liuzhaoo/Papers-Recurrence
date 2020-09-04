@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 import torch
-import torch.utils.data as data
+from torch.utils.data import Dataset
 
 from .loader import VideoLoader
 
@@ -38,7 +38,7 @@ def get_database(data, subset, root_path, video_path_formatter):
 	return video_ids, video_paths, annotations
 
 
-class VideoDataset(data.Dataset):
+class VideoDataset(Dataset):
 	def __init__(self,
 	             root_path,
 	             annotation_path,
@@ -59,7 +59,7 @@ class VideoDataset(data.Dataset):
 		self.target_transform = target_transform
 
 		if video_loader is None:
-			self.loader = VideoLoader(image_name_formatter)
+			self.loader = VideoLoader(image_name_formatter)                  #  self.loader使用VideoLoader的加载方式，传入的参数为 图片名称里的数字
 		else:
 			self.loader = video_loader
 
@@ -109,17 +109,36 @@ class VideoDataset(data.Dataset):
 
 		return dataset, idx_to_class
 
-	def __loading(self,path,frame_indices):
-		clip = self.loader(path,frame_indices)      #  根据路径和id找到每帧图片
+	def __loading(self,path,frame_indices):         #
+		clip = self.loader(path,frame_indices)      #  根据路径和id找到每帧图片,依次放到列表里，
+
 		if self.spatial_transform is not None:
 			self.spatial_transform.randomize_parameters()
-			clip = [self.spatial_transform(img) for img in clip]
-
-		clip = torch.stack(clip,0).permute(1,0,2,3)
+			clip = [self.spatial_transform(img) for img in clip]    #  进行预处理，裁剪等操作，返回tensor的列表
+		clip = torch.stack(clip,0).permute(1,0,2,3)                 #  将列表转换为tensor，并将通道维度和batch维度互换
 
 		return clip
 
 
 	def __getitem__(self, index):
 		path = self.data[index]['video']
-		if isinstance(self.target_type,list)
+		if isinstance(self.target_type,list):
+			target = [self.data[index][t] for t in self.target_type]
+		else:
+			target = self.data[index][self.target_type]
+
+		frame_indices = self.data[index]['frame_indices']                #
+		if self.temporal_transform is not None:
+			frame_indices = self.temporal_transform(frame_indices)
+
+		clip = self.__loading(path,frame_indices)         # 取出图片
+		
+		if self.target_transform is not None:
+			target = self.target_transform(target)
+
+		return clip,target                      #  返回每个视频的所有帧
+
+
+	def __len__(self):
+		return len(self.data)
+

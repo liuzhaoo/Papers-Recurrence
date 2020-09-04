@@ -24,9 +24,9 @@ class VideoLoader(object):
 
 	def __call__(self, video_path,frame_indices):
 		video = []
-		for i in frame_indices:
-			image_path = video_path/self.image_name_formatter(i)
+		for i in frame_indices:                                           # 这里的frame_indices是一个视频所有帧的名称里的数字
+			image_path = video_path/self.image_name_formatter(i)		 # 一个视频所有帧的路径 video_path是以视频为名的文件夹
 			if image_path.exists():
 				video.append(self.image_loader(image_path))
 
-		return video
+		return video                                                     #  因此返回的video是某个视频对应的所有帧
