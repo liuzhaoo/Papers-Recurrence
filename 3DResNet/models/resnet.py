@@ -196,16 +196,13 @@ class ResNet(nn.Module):
 
 		x = x.view(x.size(0), -1)  # 转换维度,[batch_size,block_inplanes[3] * block.expansion]
 
-		x = self.fc(x)    # size[batch,n_classes]
+		x = self.fc(x)  # size[batch,n_classes]
 
 		return x
 
 
-def generate_model(model_depth,**kwargs):
-
-
-	if model_depth==101:
-		model = ResNet(Bottleneck,[3,4,23,3],get_inplanes(),**kwargs)
-
+def generate_model(model_depth, **kwargs):
+	if model_depth == 101:
+		model = ResNet(Bottleneck, [3, 4, 23, 3], get_inplanes(), **kwargs)
 
 	return model
