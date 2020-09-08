@@ -44,10 +44,10 @@ def generate_model(opt):
 	return model
 
 
-def load_pretrained_model(model,pretrain_path,model_name,n_finetune_classes):
+def load_pretrained_model(model, pretrain_path, model_name, n_finetune_classes):
 	if pretrain_path:
 		print('loading pretrained model {}'.format(pretrain_path))
-		pretrain = torch.load(pretrain_path,map_location='cpu')
+		pretrain = torch.load(pretrain_path, map_location='cpu')
 
 		model.load_state_dict(pretrain['state_dict'])
 		tmp_model = model
@@ -57,28 +57,25 @@ def load_pretrained_model(model,pretrain_path,model_name,n_finetune_classes):
 			                                 n_finetune_classes)
 
 		else:
-			tmp_model.fc = nn.Linear(tmp_model.fc.in_features,n_finetune_classes)
+			tmp_model.fc = nn.Linear(tmp_model.fc.in_features, n_finetune_classes)
 
 	return model
 
 
-
-def make_data_parallel(model,is_distributed,device):
+def make_data_parallel(model, is_distributed, device):
 	if is_distributed:
 		if device.type == 'cuda' and device.index is not None:
 
 			torch.cuda.set_device(device)
 			model.to(device)
 
-			model = nn.parallel.DistributedDataParallel(model,device_ids=[device])
+			model = nn.parallel.DistributedDataParallel(model, device_ids=[device])
 
 		else:
 			model.to(device)
 			model = nn.parallel.DistributedDataParallel(model)
 
-	elif device.type == 'cuda'
-		model = nn.DataParallel(model,device_ids=None).cuda()
+	elif device.type == 'cuda':
+		model = nn.DataParallel(model, device_ids=None).cuda()
 
-	return  model
-
-
+	return model
