@@ -157,7 +157,7 @@ class MultiScaleCornerCrop(object):
 		                                                                                  self.interpolation)
 
 
-class RandomResizeCrop(transforms.RandomResizedCrop):
+class RandomResizedCrop(transforms.RandomResizedCrop):
 	def __init__(self,
 	             size,
 	             scale=(0.08, 1.0),
