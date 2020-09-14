@@ -33,7 +33,7 @@ def get_training_data(video_path,
 
 	training_data = VideoDataset(video_path,
 	                             annotation_path,
-	                             'training',
+	                             'train',
 	                             spatial_transform=spatial_transform,
 	                             temporal_transform=temporal_transform,
 	                             target_transform=target_transform,
@@ -56,7 +56,7 @@ def get_validation_data(video_path,
 	validation_data = VideoDatasetMultiClips(
 		video_path,
 		annotation_path,
-		'validation',
+		'val',
 		spatial_transform=spatial_transform,
 		temporal_transform=temporal_transform,
 		target_transform=target_transform,
@@ -80,9 +80,9 @@ def get_inference_data(video_path,
 		lambda root_path, label, video_id: root_path / label / video_id)
 
 	if inference_subset == 'train':
-		subset = 'training'
+		subset = 'train'
 	elif inference_subset == 'val':
-		subset = 'validation'
+		subset = 'val'
 	elif inference_subset == 'test':
 		subset = 'testing'
 
