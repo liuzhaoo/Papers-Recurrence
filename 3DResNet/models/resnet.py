@@ -59,7 +59,7 @@ class BasicBlock(nn.Module):
 
 
 class Bottleneck(nn.Module):
-	expeansion = 4  # 进行中间层的一些特征图的扩张
+	expansion = 4  # 进行中间层的一些特征图的扩张
 
 	def __init__(self, in_planes, planes, stride=1, downsample=None):
 		super().__init__()
@@ -68,8 +68,8 @@ class Bottleneck(nn.Module):
 		self.bn1 = nn.BatchNorm3d(planes)
 		self.conv2 = conv3x3x3(planes, planes, stride)
 		self.bn2 = nn.BatchNorm3d(planes)
-		self.conv3 = conv1x1x1(planes, planes * self.expeansion)
-		self.bn3 = nn.BatchNorm3d(planes * self.expeansion)
+		self.conv3 = conv1x1x1(planes, planes * self.expansion)
+		self.bn3 = nn.BatchNorm3d(planes * self.expansion)
 		self.relu = nn.ReLU(inplace=True)
 		self.downsample = downsample
 		self.stride = stride
@@ -118,7 +118,7 @@ class ResNet(nn.Module):
 		self.conv1 = nn.Conv3d(3, self.in_planes,
 		                       kernel_size=(7, 7, 7),
 		                       stride=(1, 2, 2),
-		                       padding=(7 // 2, 3, 3),
+		                       padding=(7//2, 3, 3),
 		                       bias=False)  # 在第一个卷积层对空间维度进行一次下采样，时间维度不变
 
 		self.bn1 = nn.BatchNorm3d(self.in_planes)
@@ -132,11 +132,12 @@ class ResNet(nn.Module):
 		self.layer4 = self._make_layer(block, block_inplanes[3], layers[3], shortcut_type, stride=2)
 
 		self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))  # 通过平均池化将时间和空间的都转换为1
+
 		self.fc = nn.Linear(block_inplanes[3] * block.expansion, n_classes)
 
 		for m in self.modules():
 			if isinstance(m, nn.Conv3d):
-				nn.init.kaiming_normal_(m.wight,
+				nn.init.kaiming_normal_(m.weight,
 				                        mode='fan_out',
 				                        nonlinearity='relu')
 
@@ -202,7 +203,21 @@ class ResNet(nn.Module):
 
 
 def generate_model(model_depth, **kwargs):
-	if model_depth == 101:
+	assert model_depth in [10, 18, 34, 50, 101, 152, 200]
+
+	if model_depth == 10:
+		model = ResNet(BasicBlock, [1, 1, 1, 1], get_inplanes(), **kwargs)
+	elif model_depth == 18:
+		model = ResNet(BasicBlock, [2, 2, 2, 2], get_inplanes(), **kwargs)
+	elif model_depth == 34:
+		model = ResNet(BasicBlock, [3, 4, 6, 3], get_inplanes(), **kwargs)
+	elif model_depth == 50:
+		model = ResNet(Bottleneck, [3, 4, 6, 3], get_inplanes(), **kwargs)
+	elif model_depth == 101:
 		model = ResNet(Bottleneck, [3, 4, 23, 3], get_inplanes(), **kwargs)
+	elif model_depth == 152:
+		model = ResNet(Bottleneck, [3, 8, 36, 3], get_inplanes(), **kwargs)
+	elif model_depth == 200:
+		model = ResNet(Bottleneck, [3, 24, 36, 3], get_inplanes(), **kwargs)
 
 	return model

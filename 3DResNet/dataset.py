@@ -27,7 +27,7 @@ def get_training_data(video_path,
 	else:
 		loader = VideoLoader(image_name_formatter)
 
-	video_path_formatter = (lambda root_path,label,video_id:root_path / label / video_id)
+	video_path_formatter = (lambda root_path,label,video_id:root_path /'train_jpg'/label / video_id)
 
 	# 只考虑数据集为 kinetics或ucf hmbd
 
@@ -45,12 +45,19 @@ def get_training_data(video_path,
 
 def get_validation_data(video_path,
                         annotation_path,
+						dataset_name,
+                        input_type,
+                        file_type,
                         spatial_transform=None,
                         temporal_transform=None,
                         target_transform=None):
+	assert dataset_name in ['kinetics', 'activitynet', 'ucf101', 'hmdb51', 'mit']
+	assert input_type in ['rgb', 'flow']
+	assert file_type in ['jpg', 'hdf5']
+
 	loader = VideoLoader(image_name_formatter)
 	video_path_formatter = (
-		lambda root_path, label, video_id: root_path / label / video_id)
+		lambda root_path, label, video_id: root_path /'val_jpg'/label / video_id)
 
 
 	validation_data = VideoDatasetMultiClips(
@@ -68,12 +75,20 @@ def get_validation_data(video_path,
 
 def get_inference_data(video_path,
                         annotation_path,
+						dataset_name,
+                        input_type,
+                        file_type,
                         inference_subset,
                         spatial_transform=None,
                         temporal_transform=None,
                         target_transform=None):
 
 	assert inference_subset in ['train', 'val', 'test']
+	assert dataset_name in [
+		'kinetics', 'activitynet', 'ucf101', 'hmdb51', 'mit'
+	]
+	assert input_type in ['rgb', 'flow']
+	assert file_type in ['jpg', 'hdf5']
 
 	loader = VideoLoader(image_name_formatter)
 	video_path_formatter = (

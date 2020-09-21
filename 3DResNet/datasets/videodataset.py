@@ -115,7 +115,7 @@ class VideoDataset(Dataset):
 		if self.spatial_transform is not None:
 			self.spatial_transform.randomize_parameters()
 			clip = [self.spatial_transform(img) for img in clip]    #  进行预处理，裁剪等操作，返回tensor的列表
-		clip = torch.stack(clip,0).permute(1,0,2,3)                 #  将列表转换为tensor，并将通道维度和batch维度互换
+		clip = torch.stack(clip,0)                #  将列表转换为tensor，并将通道维度和batch维度互换
 
 		return clip
 

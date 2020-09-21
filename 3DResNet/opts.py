@@ -6,22 +6,22 @@ from pathlib import Path
 def parse_opts():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--root_path',
-	                    default=None,
+	                    default='/home/lzhao/FILE/datasets',
 	                    type=Path,
 	                    help='Root directory path')
 
 	parser.add_argument('--video_path',
-	                    default=None,
+	                    default='kinetics',
 	                    type=Path,
 	                    help='图片的文件夹路径')
 
 	parser.add_argument('--annotation_path',
-	                    default=None,
+	                    default='kinetics.json',
 	                    type=Path,
 	                    help='Annotation file path')
 
 	parser.add_argument('--result_path',
-	                    default=None,
+	                    default='results',
 	                    type=Path,
 	                    help='Result directory path')
 
@@ -30,14 +30,10 @@ def parse_opts():
 	                    type=str,
 	                    help='Annotation file path')
 
+
 	parser.add_argument('--n_classes',
 	                    default=400,
 	                    type=int,
-	                    help='Number of classes')
-
-	parser.add_argument('--pretrain_path',
-	                    default=None,
-	                    type=Path,
 	                    help=('Number of classes of pretraining task.'
 	                          'When using --pretrain_path, this must be set.'))
 
@@ -227,7 +223,7 @@ def parse_opts():
 	                    type=int,
 	                    help='Number of threads for multi-thread loading')
 	parser.add_argument('--checkpoint',
-	                    default=10,
+	                    default=5,
 	                    type=int,
 	                    help='Trained model is saved at every this epochs.')
 	parser.add_argument(
@@ -237,7 +233,7 @@ def parse_opts():
 		help=
 		'(resnet | resnet2p1d | preresnet | wideresnet | resnext | densenet | ')
 	parser.add_argument('--model_depth',
-	                    default=18,
+	                    default=50,
 	                    type=int,
 	                    help='Depth of resnet (10 | 18 | 34 | 50 | 101)')
 
@@ -268,7 +264,7 @@ def parse_opts():
 	                    type=int,
 	                    help='Manually set random seed')
 	parser.add_argument('--accimage',
-	                    action='store_true',
+	                    action='store_false',
 	                    help='If true, accimage is used to load images.')
 	parser.add_argument('--output_topk',
 	                    default=5,

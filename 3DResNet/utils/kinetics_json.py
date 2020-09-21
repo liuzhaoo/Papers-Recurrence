@@ -12,8 +12,8 @@ def get_n_frames(video_path):
 	])
 
 
-def convert_csv_to_dict(csv_path):
-	subset = csv_path.stem
+def convert_csv_to_dict(csv_path,subset):
+
 	data = pd.read_csv(csv_path)
 	keys = []
 	key_labels = []
@@ -51,8 +51,8 @@ def convert_kinetics_csv_to_json(train_csv_path, val_csv_path,
 	dst_data = {}
 	dst_data['labels'] = labels
 	dst_data['database'] = {}
-	train_database = convert_csv_to_dict(train_csv_path)
-	val_database = convert_csv_to_dict(val_csv_path)
+	train_database = convert_csv_to_dict(train_csv_path,'train')
+	val_database = convert_csv_to_dict(val_csv_path,'val')
 	# if test_csv_path.exists():
 	# 	test_database = convert_csv_to_dict(test_csv_path)
 
@@ -90,27 +90,27 @@ def convert_kinetics_csv_to_json(train_csv_path, val_csv_path,
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument(
-		'--dir_path', default='../files', type=Path, help='输入csv路径'
+		'--dir_path', default='/home/lzhao/FILE/datasets/kinetics/subset/files', type=Path, help='输入csv路径'
 
 	)
 	parser.add_argument(
-		'--video_patht', default='/home/lzhao/FILE/datasets/kinetics/train_jpg', type=Path, help='照片数据'    # 每次修改
+		'--video_patht', default='/home/lzhao/FILE/datasets/kinetics/subset/jpg/train', type=Path, help='照片数据'    # 每次修改
 	)
 	parser.add_argument(
-		'--video_pathv', default='/home/lzhao/FILE/datasets/kinetics/val_jpg', type=Path, help='照片数据'  # 每次修改
+		'--video_pathv', default='/home/lzhao/FILE/datasets/kinetics/subset/jpg/val', type=Path, help='照片数据'  # 每次修改
 	)
 	parser.add_argument('--video_type',
 	                    default='jpg',
 	                    type=str,
 	                    help='jpg or hdf5')
 	parser.add_argument('--dst_path',
-	                    default='../files/kinetics.json',
+	                    default='/home/lzhao/FILE/datasets/kinetics/subset/files/kinetics.json',
 	                    type=Path,
 	                    help='Path of dst json file.')
 	args = parser.parse_args()
 
-	train_csv_path = (args.dir_path / 'train.csv')
-	val_csv_path = (args.dir_path / 'val.csv')
+	train_csv_path = (args.dir_path / 'train_subset.csv')
+	val_csv_path = (args.dir_path / 'val_subset.csv')
 	test_csv_path = None
 
 	convert_kinetics_csv_to_json(train_csv_path, val_csv_path,
