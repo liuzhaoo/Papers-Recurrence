@@ -104,7 +104,7 @@ if __name__ == '__main__':
 	                    type=str,
 	                    help='jpg or hdf5')
 	parser.add_argument('--dst_path',
-	                    default='/home/lzhao/FILE/datasets/kinetics/subset/files/kinetics.json',
+	                    default='/home/lzhao/FILE/datasets/kinetics/subset/kinetics.json',
 	                    type=Path,
 	                    help='Path of dst json file.')
 	args = parser.parse_args()
