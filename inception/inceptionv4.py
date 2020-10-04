@@ -70,7 +70,7 @@ class Stem(nn.Module):
 		return x
 
 
-class Inception_A(nn.Module):
+class   Inception_A(nn.Module):
 	def __init__(self, in_channels):
 		super(Inception_A, self).__init__()
 
@@ -191,13 +191,67 @@ class Inception_C(nn.Module):
 			nn.AvgPool2d(3, stride=1, padding=1, count_include_pad=False),  # Nx1536x8x8
 			BasicConv2d(1536, 256, 1, stride=1, padding=0)  # Nx256x8x8
 		)
-		self.branch1_m = BasicConv2d(in_channels, 384, 1, stride=1, padding=0)
-		self.branch1_l = BasicConv2d(384, 256, (1, 3), stride=1, padding=(0, 1))
-		self.branch1_l = BasicConv2d(384, 256, (3, 1), stride=1, padding=(1, 0))
+		self.branch1_m = BasicConv2d(in_channels, 384, 1, stride=1, padding=0)  # Nx384x8x8
+		self.branch1_l = BasicConv2d(384, 256, (1, 3), stride=1, padding=(0, 1))  # Nx256x8x8
+		self.branch1_l = BasicConv2d(384, 256, (3, 1), stride=1, padding=(1, 0))  # Nx256x8x8
 
-		self.branch2 = BasicConv2d(in_channels, 256, 1, stride=1, padding=0)
+		self.branch2 = BasicConv2d(in_channels, 256, 1, stride=1, padding=0)  # Nx256x8x8
 		self.branch3_m = nn.Sequential(
-			BasicConv2d(in_channels, 384, 1, stride=1, padding=0),
-			BasicConv2d(384, 448, (1, 3), stride=1, padding=(0, 1)),
-			BasicConv2d(448, 512, (3, 1), stride=1, padding=(1, 0))
+			BasicConv2d(in_channels, 384, 1, stride=1, padding=0),  # Nx384x8x8
+			BasicConv2d(384, 448, (1, 3), stride=1, padding=(0, 1)),  # Nx448x8x8
+			BasicConv2d(448, 512, (3, 1), stride=1, padding=(1, 0))  # Nx512x8x8
 		)
+		self.branch3_l = BasicConv2d(512, 256, (1, 3), stride=1, padding=(0, 1))  # Nx256x8x8
+		self.branch3_r = BasicConv2d(512, 256, (3, 1), stride=1, padding=(1, 0))  # Nx256x8x8
+
+	def forward(self, x):
+		x0 = self.branch0(x)  # Nx256x8x8
+
+		x1_m = self.branch1_m(x)
+		x1_l = self.branch1_l(x1_m)
+		x1_r = self.branch1_r(x1_m)
+		x1 = torch.cat((x1_l, x1_r), 1)  # Nx512x8x8
+
+		x2 = self.branch2(x)  # Nx256x8x8
+
+		x3_m = self.branch3_m(x)
+		x3_l = self.branch3_l(x3_m)
+		x3_r = self.branch3_r(x3_m)
+		x3 = torch.cat((x3_l, x3_r), 1)  # Nx512x8x8
+
+		x = torch.cat((x0, x1, x2, x3), 1)  # Nx1536x8x8
+		return x
+
+
+class Inceptionv4(nn.Module):
+	def __init__(self,in_channels=3,classes=400):
+		super(Inceptionv4, self).__init__()
+		num= [4,7,3]
+		blocks = []
+		blocks.append(Stem(in_channels))   # Nx384x35x35
+		for i in range(num[0]):
+			blocks.append(Inception_A(384)) # Nx384x35x35
+
+		blocks.append(Reduction_A(384))  # Nx1024x17x17
+
+		for i in range(num[1]):
+			blocks.append(Inception_B(1024)) # Nx1024x17x17
+
+		blocks.append(Reduction_B(1024)) # Nx1536x8x8
+
+		for i in range(num[2]):
+			blocks.append(Inception_C(1536)) # Nx1536x8x8
+
+		self.features = nn.Sequential(*blocks)
+		self.globalaverage_pooling = nn.AdaptiveAvgPool2d((1,1)) # 待查
+		self.dropout = nn.Dropout(p=0.8)
+		self.linear = nn.Linear(1536,classes)
+
+	def forward(self,x):
+
+		x = self.features(x) # Nx1536x8x8
+		x = self.globalaverage_pooling(x)  # Nx1536x1x1
+		x = x.view(x.size(0),-1)  # Nx1536
+		x = self.dropout(x)
+		x = self.linear(x)
+		return x

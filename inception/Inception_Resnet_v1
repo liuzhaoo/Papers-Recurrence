@@ -1,0 +1,127 @@
+import torch
+import torch.nn as nn
+
+
+class BasicConv2d(nn.Module):
+	def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, bias=False):
+		super(BasicConv2d, self).__init__()
+
+		self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride=stride, padding=padding, bias=bias)
+		self.bn = nn.BatchNorm2d(out_channels)
+		self.relu = nn.ReLU(inplace=True)
+
+	def forward(self, x):
+		x = self.conv2d(x)
+		x = self.bn(x)
+		x = self.relu(x)
+		return x
+
+
+class Stem(nn.Module):
+	def __init__(self, in_channels):
+		super(Stem, self).__init__()
+
+		self.conv_1v = BasicConv2d(in_channels, 32, 3, stride=2, padding=0)  # Nx32x149x149
+		self.conv_2v = BasicConv2d(32, 32, 3, stride=1, padding=0)  # Nx32x147x147
+		self.conv_3 = BasicConv2d(32, 64, 3, stride=1, padding=1)  # Nx64x147x147
+		self.maxpool_4v = nn.MaxPool2d(3, stride=2, padding=0)  # Nx64x73x73
+		self.conv_5 = BasicConv2d(64, 80, 1, stride=1, padding=0)  # Nx80x73x73
+		self.conv_6v = BasicConv2d(80, 192, 3, stride=1, padding=0)  # Nx192x71x71
+		self.conv_7v = BasicConv2d(192, 256, 3, stride=2, padding=0)  # Nx256x35x35
+
+	def forward(self, x):
+		x = self.conv_1v(x)
+		x = self.conv_2v(x)
+		x = self.conv_2(x)
+		x = self.maxpool_4v(x)
+		x = self.conv_5(x)
+		x = self.conv_6v(x)
+		x = self.conv_7v(x)  # Nx256x35x35
+
+		return x
+
+
+class Inception_Resnet_A(nn.Module):
+	def __init__(self, in_channels, scale=1.0):
+		super(Inception_Resnet_A, self).__init__()
+		self.scale = scale
+		self.branch0 = BasicConv2d(in_channels, 32, 1, stride=1, padding=0)  # Nx32x35x35
+		self.branch1 = nn.Sequential(
+			BasicConv2d(in_channels, 32, 1, stride=1, padding=0),  # Nx32x35x35
+			BasicConv2d(32, 32, 3, stride=1, padding=1)  # Nx32x35x35
+		)
+		self.branch2 = nn.Sequential(
+			BasicConv2d(in_channels, 32, 1, stride=1, padding=0),  # Nx32x35x35
+			BasicConv2d(32, 32, 3, stride=1, padding=1),  # Nx32x35x35
+			BasicConv2d(32, 32, 3, stride=1, padding=1)  # Nx32x35x35
+		)
+
+		self.conv = nn.Conv2d(96, 256, 1, stride=1, padding=0, bias=True)
+		self.relu = nn.ReLU(inplace=True)
+
+	def forward(self, x):
+		x0 = self.branch0(x)  # Nx32x35x35
+		x1 = self.branch1(x)  # Nx32x35x35
+		x2 = self.branch2(x)  # Nx32x35x35
+
+		x_res = torch.cat((x0, x1, x2), dim=1)
+		x_res = self.conv(x_res)
+
+		out = x + x_res * self.scale  # Nx256x35x35
+		return out
+
+
+class Reduction_A(nn.Module):
+	def __init__(self, in_channels):
+		super(Reduction_A, self).__init__()
+
+		self.branch_0 = nn.MaxPool2d(3, stride=2, padding=0)  # Nx256x17x17
+		self.branch_1 = BasicConv2d(in_channels, 384, 3, stride=2, padding=0)  # Nx384x17x17
+		self.branch_2 = nn.Sequential(
+			BasicConv2d(in_channels, 192, 1, stride=1, padding=1),
+			BasicConv2d(192, 192, 3, stride=1, padding=1),
+			BasicConv2d(224, 256, 3, stride=2, padding=0)  # Nx256x17x17
+		)
+
+	def forward(self, x):
+		x0 = self.branch_0(x)
+		x1 = self.branch_1(x)
+		x2 = self.branch_2(x)
+
+		x = torch.cat((x0, x1, x2), dim=1)  # Nx896x17x17
+		return x
+
+
+class Inception_Resnet_B(nn.Module):
+	def __init__(self, in_channels, scale=1.0):
+		super(Inception_Resnet_B, self).__init__()
+
+		self.scale = scale
+		self.branch0 = BasicConv2d(in_channels, 128, 1, stride=1, padding=0)  # Nx128x17x17
+		self.branch1 = nn.Sequential(
+			BasicConv2d(in_channels, 128, 1, stride=1, padding=0),  # Nx128x17x17
+			BasicConv2d(128, 128, (1, 7), stride=1, padding=(0, 3)),
+			BasicConv2d(128, 128, (7, 1), stride=1, padding=(3, 0))  # Nx128x17x17
+		)
+
+		self.conv = nn.Conv2d(512, 896, 1, stride=1, padding=0, bias=True)
+		self.relu = nn.ReLU(inplace=True)
+
+	def forward(self, x):
+		x0 = self.branch0(x)  # Nx128x17x17
+		x1 = self.branch1(x)  # Nx128x17x17
+		x_res = torch.cat((x0, x1), dim=1)  # Nx512x17x17
+		x_res = self.conv(x_res)
+
+		out = x + x_res * self.scale
+		return out
+
+class Reduction_B(nn.Module):
+	def __init__(self,in_channels):
+		super(Reduction_B, self).__init__()
+
+		self.branch0 = BasicConv2d(in_channels,)
+
+
+
+
