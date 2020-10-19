@@ -32,7 +32,7 @@ from validation import val_epoch
 import inference
 
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '0,2,3'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '0,2'
 
 def json_serial(obj):
     if isinstance(obj, Path):
@@ -366,7 +366,7 @@ def main_worker(index, opt):
     if not opt.no_val:
         val_loader, val_logger = get_val_utils(opt)
 
-    if opt.tensorboard and opt.is_master_node:
+    if not opt.tensorboard and opt.is_master_node:
         from torch.utils.tensorboard import SummaryWriter
         if opt.begin_epoch == 1:
             tb_writer = SummaryWriter(log_dir=opt.result_path)

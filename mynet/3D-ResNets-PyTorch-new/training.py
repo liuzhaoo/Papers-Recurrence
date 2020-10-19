@@ -58,7 +58,7 @@ def train_epoch(epoch,
                 'lr': current_lr
             })
 
-        print('Epoch: [{0}][{1}/{2}]\t'
+        print('Train Epoch: [{0}][{1}/{2}]\t'
               'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
               'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
               'Loss {loss.val:.4f} ({loss.avg:.4f})\t'

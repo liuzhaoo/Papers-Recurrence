@@ -197,7 +197,7 @@ class LAU_Net(nn.Module):
 		return x
 
 
-def gennerate_model(**kwargs):
-	model = LAU_Net(in_channels=3, classes=400, **kwargs)
+def gennerate_model(classes=101,**kwargs):
+	model = LAU_Net(in_channels=3, classes=classes, **kwargs)
 
 	return model

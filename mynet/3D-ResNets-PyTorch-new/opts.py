@@ -5,32 +5,32 @@ from pathlib import Path
 def parse_opts():
     parser = argparse.ArgumentParser()
     parser.add_argument('--root_path',
-                        default='/home/lzhao/FILE/datasets/kinetics',
+                        default='/home/lzhao/FILE/datasets/UCF101',
                         type=Path,
                         help='Root directory path')
 
     parser.add_argument('--video_path',
-                        default='subset/jpg',
+                        default='ucf101',
                         type=Path,
                         help='图片的文件夹路径')
 
     parser.add_argument('--annotation_path',
-                        default='test_kinetics.json',
+                        default='ucf101_01.json',
                         type=Path,
                         help='Annotation file path')
 
     parser.add_argument('--result_path',
-                        default='results_lau',
+                        default='result',
                         type=Path,
                         help='Result directory path')
     parser.add_argument(
         '--dataset',
-        default='mini_kinetics',
+        default='ucf101',
         type=str,
         help='Used dataset (activitynet | kinetics | ucf101 | hmdb51)')
     parser.add_argument(
         '--n_classes',
-        default=400,
+        default=101,
         type=int,
         help=
         'Number of classes (activitynet: 200, kinetics: 400 or 600, ucf101: 101, hmdb51: 51)'
@@ -153,7 +153,7 @@ def parse_opts():
         help='Patience of LR scheduler. See documentation of ReduceLROnPlateau.'
     )
     parser.add_argument('--batch_size',
-                        default=24,
+                        default=32,
                         type=int,
                         help='Batch Size')
     parser.add_argument(
@@ -281,7 +281,7 @@ def parse_opts():
         '--distributed',
         action='store_true',
         help='Use multi-processing distributed training to launch '
-        'N processes per node, which has N GPUs.')
+             'N processes per node, which has N GPUs.')
     parser.add_argument('--dist_url',
                         default='tcp://127.0.0.1:23456',
                         type=str,

@@ -47,7 +47,7 @@ def generate_model(opt):
                                       no_max_pool=opt.no_max_pool,
                                       widen_factor=opt.resnet_widen_factor)
     elif opt.model == 'LAU_net':
-        model = LAU_net.gennerate_model()
+        model = LAU_net.gennerate_model(classes=opt.n_classes)
 
     return model
 

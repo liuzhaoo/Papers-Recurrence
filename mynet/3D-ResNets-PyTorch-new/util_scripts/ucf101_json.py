@@ -4,9 +4,13 @@ from pathlib import Path
 
 import pandas as pd
 
-from .utils import get_n_frames
+# from .utils import get_n_frames
 
-
+def get_n_frames(video_path):
+    return len([
+        x for x in video_path.iterdir()
+        if 'image' in x.name and x.name[0] != '.'
+    ])
 def convert_csv_to_dict(csv_path, subset):
     data = pd.read_csv(csv_path, delimiter=' ', header=None)
     keys = []
@@ -67,18 +71,18 @@ def convert_ucf101_csv_to_json(label_csv_path, train_csv_path, val_csv_path,
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('dir_path',
-                        default=None,
+    parser.add_argument('--dir_path',
+                        default='/home/lzhao/FILE/datasets/UCF101/ucfTrainTestlist',
                         type=Path,
                         help=('Directory path including classInd.txt, '
                               'trainlist0-.txt, testlist0-.txt'))
-    parser.add_argument('video_path',
-                        default=None,
+    parser.add_argument('--video_path',
+                        default='/home/lzhao/FILE/datasets/UCF101/ucf101',
                         type=Path,
                         help=('Path of video directory (jpg).'
                               'Using to get n_frames of each video.'))
-    parser.add_argument('dst_path',
-                        default=None,
+    parser.add_argument('--dst_path',
+                        default='/home/lzhao/FILE/datasets/UCF101',
                         type=Path,
                         help='Directory path of dst json file.')
 

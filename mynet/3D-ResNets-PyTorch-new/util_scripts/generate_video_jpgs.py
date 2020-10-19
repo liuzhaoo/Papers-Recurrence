@@ -67,15 +67,15 @@ def class_process(class_dir_path, dst_root_path, ext, fps=-1, size=240):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'dir_path', default=None, type=Path, help='Directory path of videos')
+        '--dir_path', default='/home/lzhao/FILE/datasets/UCF-101', type=Path, help='Directory path of videos')
     parser.add_argument(
-        'dst_path',
-        default=None,
+        '--dst_path',
+        default='/home/lzhao/FILE/datasets/ucf101',
         type=Path,
         help='Directory path of jpg videos')
     parser.add_argument(
-        'dataset',
-        default='',
+        '--dataset',
+        default='ucf101',
         type=str,
         help='Dataset name (kinetics | mit | ucf101 | hmdb51 | activitynet)')
     parser.add_argument(
